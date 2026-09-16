@@ -42,5 +42,3 @@ uv run pretend path/to/data.frm
 * **`payload/context.py`**: The core state machine and orchestrator.
 * **`payload/data_processor.py`**: High-level numerical processing (altitude zeroing, vertical velocity integration).
 * **`payload/state.py`**: The state machine states.
-
-test
