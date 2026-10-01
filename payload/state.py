@@ -5,6 +5,10 @@ the rocket is in.
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
+import time 
+import sleep
+import threading
+from gpiozero import Buzzer
 
 from payload.constants import (
     GROUND_ALTITUDE_METERS,
@@ -169,6 +173,23 @@ class LandedState(State):
     """When the rocket has landed."""
 
     __slots__ = ()
+
+    BUZZER_PIN = 18
+    BUZZER_DURATION_SECONDS = 600
+    buzzer = None
+
+
+    def beacon(buzzer) -> None:
+        limit = time.monotonic() + LandedState.BUZZER_DURATION_SECONDS
+        try:
+            while time.monotonic() < limit:
+                buzzer.on()
+                time.sleep(0.5)
+                buzzer.off()
+                time.sleep(0.5)
+        finally:
+            buzzer.off()
+            buzzer.close()
 
     def update(self) -> None:
         """
