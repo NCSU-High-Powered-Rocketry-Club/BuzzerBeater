@@ -130,6 +130,7 @@ def run_flight_loop(context: Context, flight_display: FlightDisplay) -> None:
         while True:
             context.update()
     except KeyboardInterrupt:
-        pass
+        if hasattr(context.state, "stop"):
+            context.state.stop()
     finally:
         context.stop()

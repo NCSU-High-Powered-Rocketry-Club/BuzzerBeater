@@ -11,6 +11,8 @@ dependencies = [
     "colorama",
     "numpy",
     "tzdata>=2026.2",
+    "gpiozero>=2.0",
+    "lgpio>=0.2.2; sys_platform == 'linux'",
 ]
 
 [dependency-groups]

@@ -3,17 +3,16 @@ Module for the finite state machine that represents which state of flight
 the rocket is in.
 """
 
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
-import time 
-import sleep
 import threading
-from gpiozero import Buzzer
+import time
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Any
 
 from payload.constants import (
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_ALTITUDE_THRESHOLD,
+    MAX_FREE_FALL_SECONDS,
     TAKEOFF_VELOCITY_METERS_PER_SECOND,
 )
 
@@ -146,23 +145,33 @@ class CoastState(State):
 class FreeFallState(State):
     """When the rocket is falling back to the ground after apogee."""
 
-    __slots__ = ()
+    __slots__ = ("_start_time_monotonic", "_start_timestamp_seconds")
 
     def __init__(self, context: Context) -> None:
         super().__init__(context)
+        self._start_time_monotonic = time.monotonic()
+        self._start_timestamp_seconds = context.data_processor.current_timestamp_seconds
 
     def update(self) -> None:
         """
         Check if the rocket has landed, based on our altitude and a spike in
-        acceleration.
+        acceleration, or if the maximum free fall duration has elapsed.
         """
         data = self.context.data_processor
 
-        # If our altitude is around 0, and we have an acceleration spike, we have landed
-        if (
+        impact_detected = (
             data.current_altitude <= GROUND_ALTITUDE_METERS
             and data.average_vertical_acceleration >= LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED
-        ):
+        )
+
+        elapsed_free_fall_seconds = (
+            data.current_timestamp_seconds - self._start_timestamp_seconds
+            if self._start_timestamp_seconds > 0
+            else time.monotonic() - self._start_time_monotonic
+        )
+        timeout_reached = elapsed_free_fall_seconds >= MAX_FREE_FALL_SECONDS
+
+        if impact_detected or timeout_reached:
             self.next_state()
 
     def next_state(self) -> None:
@@ -172,24 +181,66 @@ class FreeFallState(State):
 class LandedState(State):
     """When the rocket has landed."""
 
-    __slots__ = ()
+    __slots__ = ("_buzzer_device", "_buzzer_thread", "_stop_event")
 
-    BUZZER_PIN = 18
-    BUZZER_DURATION_SECONDS = 600
-    buzzer = None
+    _BUZZER_PIN = 26
+    _BUZZER_DURATION_SECONDS = 600  # 10 minutes
 
+    def __init__(
+        self, context: Context, buzzer: Any = None, duration_seconds: float | None = None
+    ) -> None:
+        super().__init__(context)
+        self._stop_event = threading.Event()
+        self._buzzer_device = buzzer if buzzer is not None else self._init_buzzer()
+        duration = (
+            duration_seconds if duration_seconds is not None else self._BUZZER_DURATION_SECONDS
+        )
 
-    def beacon(buzzer) -> None:
-        limit = time.monotonic() + LandedState.BUZZER_DURATION_SECONDS
+        # Non-daemon so the thread continues running for the full duration even if main stops.
+        self._buzzer_thread = threading.Thread(
+            target=self._beacon,
+            args=(self._buzzer_device, self._stop_event, duration),
+            daemon=False,
+            name="Buzzer Beacon Thread",
+        )
+        self._buzzer_thread.start()
+
+    def _init_buzzer(self) -> Any:
         try:
-            while time.monotonic() < limit:
-                buzzer.on()
-                time.sleep(0.5)
-                buzzer.off()
-                time.sleep(0.5)
+            from gpiozero import Buzzer
+
+            return Buzzer(self._BUZZER_PIN)
+        except Exception:
+            # Fallback for dev environments, mock replays, or when GPIO is inaccessible
+            return None
+
+    @staticmethod
+    def _beacon(buzzer: Any, stop_event: threading.Event, duration_seconds: float) -> None:
+        deadline = time.monotonic() + duration_seconds
+        try:
+            while time.monotonic() < deadline and not stop_event.is_set():
+                if buzzer is not None:
+                    buzzer.on()
+                if stop_event.wait(0.5):
+                    break
+                if buzzer is not None:
+                    buzzer.off()
+                if stop_event.wait(0.5):
+                    break
         finally:
-            buzzer.off()
-            buzzer.close()
+            if buzzer is not None:
+                try:
+                    buzzer.off()
+                except Exception:
+                    pass
+                try:
+                    buzzer.close()
+                except Exception:
+                    pass
+
+    def stop(self) -> None:
+        """Stops the buzzer beacon thread immediately."""
+        self._stop_event.set()
 
     def update(self) -> None:
         """
