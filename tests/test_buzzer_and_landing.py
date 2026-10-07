@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from payload.constants import (
+    BUZZER_PIN,
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_FREE_FALL_SECONDS,
@@ -100,6 +101,10 @@ class TestFreeFallState(unittest.TestCase):
 class TestLandedState(unittest.TestCase):
     def setUp(self):
         self.context = DummyContext()
+
+    def test_buzzer_pin_configuration(self):
+        self.assertEqual(BUZZER_PIN, 26)
+        self.assertEqual(LandedState._BUZZER_PIN, 26)
 
     def test_buzzer_beacon_toggles_and_cleans_up(self):
         mock_buzzer = MockBuzzerDevice()

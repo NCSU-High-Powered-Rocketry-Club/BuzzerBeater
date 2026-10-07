@@ -9,6 +9,8 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 from payload.constants import (
+    BUZZER_DURATION_SECONDS,
+    BUZZER_PIN,
     GROUND_ALTITUDE_METERS,
     LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED,
     MAX_ALTITUDE_THRESHOLD,
@@ -183,8 +185,8 @@ class LandedState(State):
 
     __slots__ = ("_buzzer_device", "_buzzer_thread", "_stop_event")
 
-    _BUZZER_PIN = 26
-    _BUZZER_DURATION_SECONDS = 600  # 10 minutes
+    _BUZZER_PIN = BUZZER_PIN
+    _BUZZER_DURATION_SECONDS = BUZZER_DURATION_SECONDS
 
     def __init__(
         self, context: Context, buzzer: Any = None, duration_seconds: float | None = None

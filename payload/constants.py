@@ -46,6 +46,13 @@ LANDED_ACCELERATION_METERS_PER_SECOND_SQUARED = 20.0
 it to have landed.
 """
 
+# ------------------------ Buzzer constants ------------------------
+BUZZER_PIN = 26
+"""The Raspberry Pi GPIO pin connected to the buzzer beacon circuit."""
+
+BUZZER_DURATION_SECONDS = 600.0  # 10 minutes
+"""Duration in seconds for the buzzer beacon to pulse after landing."""
+
 # ------------------------ Logger constants------------------------
 LOGS_PATH = Path("logs")
 
