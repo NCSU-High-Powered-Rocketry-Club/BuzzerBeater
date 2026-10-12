@@ -42,4 +42,12 @@ uv run pretend path/to/data.frm
 * **`payload/context.py`**: The core state machine and orchestrator.
 * **`payload/data_processor.py`**: High-level numerical processing (altitude zeroing, vertical velocity integration).
 * **`payload/state.py`**: The state machine states.
-lk
+
+
+## BUZZER TESTS
+
+- verify buzzer, wiring, and gpiozero: uv run python -c "from gpiozero import Buzzer; import time; b = Buzzer(26); b.beep(on_time=0.5, off_time=0.5, n=5, background=False)"
+
+- test LandedState directly: uv run python -c "from unittest.mock import MagicMock; from payload.state import LandedState; s = LandedState(MagicMock(), duration_seconds=5); s._buzzer_thread.join()"
+
+- end to end flight test: uv run mock launch_data/real_firm_launches/jackpot_launch_4.csv -f
