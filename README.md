@@ -46,8 +46,17 @@ uv run pretend path/to/data.frm
 
 ## BUZZER TESTS
 
-- verify buzzer, wiring, and gpiozero: uv run python -c "from gpiozero import Buzzer; import time; b = Buzzer(26); b.beep(on_time=0.5, off_time=0.5, n=5, background=False)"
+- verify buzzer, wiring, and gpiozero: 
+```bash
+uv run python -c "from gpiozero import Buzzer; import time; b = Buzzer(26); b.beep(on_time=0.5, off_time=0.5, n=5, background=False)"
+```
 
-- test LandedState directly: uv run python -c "from unittest.mock import MagicMock; from payload.state import LandedState; s = LandedState(MagicMock(), duration_seconds=5); s._buzzer_thread.join()"
+- test LandedState directly: 
+```bash
+uv run python -c "from unittest.mock import MagicMock; from payload.state import LandedState; s = LandedState(MagicMock(), duration_seconds=5); s._buzzer_thread.join()"
+```
 
-- end to end flight test: uv run mock launch_data/real_firm_launches/jackpot_launch_4.csv -f
+- end to end flight test: 
+```bash
+uv run mock launch_data/real_firm_launches/jackpot_launch_4.csv -f
+```
